@@ -29,53 +29,27 @@ def get_connection(auto_commit=True):
     except mysql.connector.Error as error:
         logging.error("Error while connecting to MySQL", error)
 
-
-
-def clear_tables(all=False):
-    """
-    Clear Nodes, Jobs, Processing_state, Parsed_outputs tables
-    """
-    cursor,conn = get_connection(auto_commit=False)
+def get_run_data():
+    cursor, conn = get_connection()
     try:
-        cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
-        if all:
-            cursor.execute(DELETE_SITES)
-            cursor.execute(DELETE_RUN)
-        cursor.execute(DELETE_NODES)
-        cursor.execute(DELETE_PROCESSING_STATE)
-        cursor.execute(DELETE_PARAMETERS)
-        cursor.execute(DELETE_JOBS)
-        cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
-        conn.commit()
-        logging.debug('Database tables cleared')
+        cursor.execute(GET_LAST_RUN_DATA)
+        run = cursor.fetchone()
+        print (run)
+        run = {
+            'run_id' : run[0],
+            'started_at' : run[1],
+            'finished_at' : run[2],
+            'state' : run[3]
+        }
+
+        return run
     except mysql.connector.Error as error:
-            logging.error("Failed to clear database: {}".format(error))
-            conn.rollback()
+            logging.error("Failed to get last run id: {}".format(error))
     finally:
         if(conn.is_connected()):
             cursor.close()
             conn.close()
 
-def increment_run_id():
-    cursor,conn = get_connection()
-    try:
-        cursor.execute(INCREMENT_RUN_ID,['STARTED'])
-        logging.debug('Run Id incremented')
-    except mysql.connector.Error as error:
-        logging.error("Failed to increment run id: {}".format(error))
-    finally:
-        if(conn.is_connected()):
-            cursor.close()
-            conn.close()
-
-def start_new_run():
-    cursor,conn = get_connection()
-    run_id = get_run_id()
-    run_exists = check_run_exists(run_id)
-    if not run_exists:
-        increment_run_id()
-    else:
-        logging.error("Cannot start a new run as the last run is still running")
 
 def check_run_exists(run_id):
     cursor,conn = get_connection()
@@ -98,29 +72,18 @@ def check_run_exists(run_id):
             conn.close()
         return flag
 
-def change_run_state(state):
-    run_id = get_run_id()
-    cursor,conn = get_connection()
-    try:
-        cursor.execute(ABORT_RUN,[state,run_id])
-        logging.debug('Run aborted')
-    except mysql.connector.Error as error:
-            logging.error("Failed to abort the run: {}".format(error))
-    finally:
-        if(conn.is_connected()):
-            cursor.close()
-            conn.close()
 
-def get_run_id():
+def search_site_param(run_id,site_id,paramName,paramValue):
     cursor, conn = get_connection()
     try:
-        cursor.execute(GET_LAST_RUN_ID)
-        run_id = cursor.fetchone()
-        return run_id[0]
+        cursor.execute(GET_PARAM,[run_id,int(site_id),paramName,paramValue])
+        result = cursor.fetchall()
+        print(result)
+        return len(result)
     except mysql.connector.Error as error:
-            logging.error("Failed to get last run id: {}".format(error))
+        logging.error("Failed to get last run id: {}".format(error))
     finally:
-        if(conn.is_connected()):
+        if (conn.is_connected()):
             cursor.close()
             conn.close()
 
