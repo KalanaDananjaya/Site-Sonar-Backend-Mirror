@@ -13,22 +13,19 @@ def search_box():
         queries = req['SearchFields']
         equation = req['Equation']
         site_id = req['SiteId']
-        #total_nodes,coverage,supported = search_results(query,site_id)
-        run_id = get_run_data()['run_id']
-        for query in queries:
-            search_site_param(run_id, site_id,query['query_key'],query['query_value'])
+        matching_jobs, total_jobs = full_search_site(site_id,queries,equation)
         result = {
-            'total_nodes':total_nodes,
-            'supported': supported,
-            'coverage':coverage
+            'total_jobs':total_jobs,
+            'matching_jobs': matching_jobs
         }
+        print (result)
         return jsonify (result)
     if request.method == 'GET':
         return render_template('index.html',init='True')
 
 @app.route('/last_run', methods=['GET'])
 def get_last_run():
-    result = get_run_data()
+    result = get_last_run_data()
     return jsonify(result)
 
 

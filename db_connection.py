@@ -29,22 +29,34 @@ def get_connection(auto_commit=True):
     except mysql.connector.Error as error:
         logging.error("Error while connecting to MySQL", error)
 
-def get_run_data():
+def get_last_run_data():
     cursor, conn = get_connection()
     try:
         cursor.execute(GET_LAST_RUN_DATA)
         run = cursor.fetchone()
-        print (run)
         run = {
             'run_id' : run[0],
             'started_at' : run[1],
             'finished_at' : run[2],
             'state' : run[3]
         }
-
         return run
     except mysql.connector.Error as error:
-            logging.error("Failed to get last run id: {}".format(error))
+        logging.error("Failed to get last run data: {}".format(error))
+    finally:
+        if(conn.is_connected()):
+            cursor.close()
+            conn.close()
+
+
+def get_last_run_id():
+    cursor, conn = get_connection()
+    try:
+        cursor.execute(GET_LAST_RUN_ID)
+        run_id = cursor.fetchone()
+        return run_id[0]
+    except mysql.connector.Error as error:
+        logging.error("Failed to get last run id: {}".format(error))
     finally:
         if(conn.is_connected()):
             cursor.close()
@@ -81,11 +93,98 @@ def search_site_param(run_id,site_id,paramName,paramValue):
         print(result)
         return len(result)
     except mysql.connector.Error as error:
-        logging.error("Failed to get last run id: {}".format(error))
+        logging.error("Failed to search individual parameter: {}".format(error))
     finally:
         if (conn.is_connected()):
             cursor.close()
             conn.close()
+
+
+def generate_query(queries,equation):
+    equation_vars = []
+    for i in range(len(queries)):
+        equation_vars.append(chr(i+65))
+    part_query = '(paramName="{}" AND paramValue="{}")'
+    for idx,var in enumerate(equation_vars):
+        equation = equation.replace(var,part_query.format(queries[idx]['query_key'],queries[idx]['query_key']),1)
+    print (equation)
+    return equation
+
+def get_job_ids_of_site_and_state(run_id,site_id,state):
+    try:
+        cursor, conn = get_connection()
+        cursor.execute(GET_ALL_JOB_IDS_BY_SITE_AND_STATE, [site_id,run_id,state])
+        result = cursor.fetchall()
+        job_ids = []
+        for row in result:
+            job_ids.append(row[0])
+        return job_ids
+    except mysql.connector.Error as error:
+        logging.error("Failed to complete multi parameter search: {}".format(error))
+    finally:
+        if (conn.is_connected()):
+            cursor.close()
+            conn.close()
+
+def get_job_params(job_id):
+    try:
+        cursor, conn = get_connection()
+        cursor.execute(GET_PARAMS_BY_JOB_ID, [job_id])
+        result = cursor.fetchall()
+        params = {}
+        for row in result:
+            params.update({ row[0] : row[1] })
+        return params
+    except mysql.connector.Error as error:
+        logging.error("Failed to complete multi parameter search: {}".format(error))
+    finally:
+        if (conn.is_connected()):
+            cursor.close()
+            conn.close()
+
+def check_key_val_exists_in_dict(key,val,dict):
+    if key in dict.keys() and val == dict[key]:
+        return True
+    else:
+        return False
+
+def full_search_site(site_id,queries,equation):
+    run_id = get_last_run_id()
+    site_id = int(site_id)
+    job_ids = get_job_ids_of_site_and_state(run_id,site_id,'COMPLETED')
+    total_jobs = len(job_ids)
+    matching_jobs = 0
+    # equation = [A and (B or C)]
+    # out True & (True or False)
+    for job in job_ids:
+        local_equation = equation
+        params = get_job_params(job)
+        print (params)
+        for idx,query in enumerate(queries):
+            is_exists = check_key_val_exists_in_dict (query['query_key'],query['query_value'],params)
+            if is_exists:
+                local_equation = local_equation.replace(chr(idx+65),'True',1)
+            else:
+                local_equation = local_equation.replace(chr(idx + 65), 'False', 1)
+        print (local_equation)
+        if eval(local_equation):
+            matching_jobs += 1
+    return matching_jobs,total_jobs
+
+    # parsed_query = generate_query(queries,equation)
+    # FINAL_QUERY = GET_MULTI_PARAM.format(parsed_query)
+    # try:
+    #     cursor, conn = get_connection()
+    #     cursor.execute(FINAL_QUERY, [run_id, int(site_id)])
+    #     result = cursor.fetchall()
+    #     print(result)
+    #     return len(result)
+    # except mysql.connector.Error as error:
+    #     logging.error("Failed to complete multi parameter search: {}".format(error))
+    # finally:
+    #     if (conn.is_connected()):
+    #         cursor.close()
+    #         conn.close()
 
 # Site Related Functions
 def get_sites():
