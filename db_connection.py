@@ -85,19 +85,19 @@ def check_run_exists(run_id):
         return flag
 
 
-def search_site_param(run_id,site_id,paramName,paramValue):
-    cursor, conn = get_connection()
-    try:
-        cursor.execute(GET_PARAM,[run_id,int(site_id),paramName,paramValue])
-        result = cursor.fetchall()
-        print(result)
-        return len(result)
-    except mysql.connector.Error as error:
-        logging.error("Failed to search individual parameter: {}".format(error))
-    finally:
-        if (conn.is_connected()):
-            cursor.close()
-            conn.close()
+# def search_site_param(run_id,site_id,paramName,paramValue):
+#     cursor, conn = get_connection()
+#     try:
+#         cursor.execute(GET_PARAM,[run_id,int(site_id),paramName,paramValue])
+#         result = cursor.fetchall()
+#         print(result)
+#         return len(result)
+#     except mysql.connector.Error as error:
+#         logging.error("Failed to search individual parameter: {}".format(error))
+#     finally:
+#         if (conn.is_connected()):
+#             cursor.close()
+#             conn.close()
 
 
 def generate_query(queries,equation):
@@ -149,27 +149,30 @@ def check_key_val_exists_in_dict(key,val,dict):
         return False
 
 def full_search_site(site_id,queries,equation):
+    # Equation eg:-
+    # in    - "A & (B | ~ (C))"
+    # out   - "True & (True | ~ (False))""
     run_id = get_last_run_id()
     site_id = int(site_id)
     job_ids = get_job_ids_of_site_and_state(run_id,site_id,'COMPLETED')
+    submitted_jobs = len(get_job_ids_of_site_and_state(run_id,site_id,'%'))
     total_jobs = len(job_ids)
     matching_jobs = 0
-    # equation = [A and (B or C)]
-    # out True & (True or False)
+
     for job in job_ids:
         local_equation = equation
         params = get_job_params(job)
         print (params)
-        for idx,query in enumerate(queries):
-            is_exists = check_key_val_exists_in_dict (query['query_key'],query['query_value'],params)
+        for variable_key in queries:
+            is_exists = check_key_val_exists_in_dict (queries[variable_key]['query_key'],queries[variable_key]['query_value'],params)
             if is_exists:
-                local_equation = local_equation.replace(chr(idx+65),'True',1)
+                local_equation = local_equation.replace(variable_key,'True')
             else:
-                local_equation = local_equation.replace(chr(idx + 65), 'False', 1)
+                local_equation = local_equation.replace(variable_key, 'False')
         print (local_equation)
-        if eval(local_equation):
+        if eval(local_equation) or eval(local_equation)==1:
             matching_jobs += 1
-    return matching_jobs,total_jobs
+    return submitted_jobs, matching_jobs, total_jobs
 
     # parsed_query = generate_query(queries,equation)
     # FINAL_QUERY = GET_MULTI_PARAM.format(parsed_query)

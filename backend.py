@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
-from functions import search_results
 from db_connection import *
 
 app = Flask(__name__)
@@ -13,9 +12,10 @@ def search_box():
         queries = req['SearchFields']
         equation = req['Equation']
         site_id = req['SiteId']
-        matching_jobs, total_jobs = full_search_site(site_id,queries,equation)
+        submitted_jobs, matching_jobs, total_jobs = full_search_site(site_id,queries,equation)
         result = {
-            'total_jobs':total_jobs,
+            'submitted_jobs': submitted_jobs,
+            'completed_jobs':total_jobs,
             'matching_jobs': matching_jobs
         }
         print (result)
