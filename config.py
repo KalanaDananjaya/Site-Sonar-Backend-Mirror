@@ -2,6 +2,6 @@
 DB_HOST     = 'localhost'
 DB_USER     = 'root'
 DB_PWD      = 'root'
-DB_DATABASE = 'run4'
+DB_DATABASE = 'run6'
 
 

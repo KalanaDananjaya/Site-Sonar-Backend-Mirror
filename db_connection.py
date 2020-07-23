@@ -84,21 +84,32 @@ def check_run_exists(run_id):
             conn.close()
         return flag
 
+def get_search_keys():
+    cursor, conn = get_connection()
+    run_id = get_last_run_id()
+    try:
+        cursor.execute(GET_SEARCH_KEYS,[run_id])
+        results = cursor.fetchone()
+        return results[0]
+    except mysql.connector.Error as error:
+            logging.debug("Failed to get search keys: {}".format(error))
+    finally:
+        if(conn.is_connected()):
+            cursor.close()
+            conn.close()
 
-# def search_site_param(run_id,site_id,paramName,paramValue):
-#     cursor, conn = get_connection()
-#     try:
-#         cursor.execute(GET_PARAM,[run_id,int(site_id),paramName,paramValue])
-#         result = cursor.fetchall()
-#         print(result)
-#         return len(result)
-#     except mysql.connector.Error as error:
-#         logging.error("Failed to search individual parameter: {}".format(error))
-#     finally:
-#         if (conn.is_connected()):
-#             cursor.close()
-#             conn.close()
-
+def get_all_jobs_by_site(run_id,site_id):
+    cursor,conn = get_connection()
+    try:
+        cursor.execute(GET_ALL_JOBS_COUNT_BY_SITE,[site_id,run_id])
+        results = cursor.fetchone()
+        return results[0]
+    except mysql.connector.Error as error:
+        logging.error("Failed to increment run id: {}".format(error))
+    finally:
+        if(conn.is_connected()):
+            cursor.close()
+            conn.close()
 
 def generate_query(queries,equation):
     equation_vars = []
@@ -155,14 +166,13 @@ def full_search_site(site_id,queries,equation):
     run_id = get_last_run_id()
     site_id = int(site_id)
     job_ids = get_job_ids_of_site_and_state(run_id,site_id,'COMPLETED')
-    submitted_jobs = len(get_job_ids_of_site_and_state(run_id,site_id,'%'))
+    submitted_jobs = get_all_jobs_by_site(run_id,site_id)
     total_jobs = len(job_ids)
     matching_jobs = 0
 
     for job in job_ids:
         local_equation = equation
         params = get_job_params(job)
-        print (params)
         for variable_key in queries:
             is_exists = check_key_val_exists_in_dict (queries[variable_key]['query_key'],queries[variable_key]['query_value'],params)
             if is_exists:
@@ -174,20 +184,6 @@ def full_search_site(site_id,queries,equation):
             matching_jobs += 1
     return submitted_jobs, matching_jobs, total_jobs
 
-    # parsed_query = generate_query(queries,equation)
-    # FINAL_QUERY = GET_MULTI_PARAM.format(parsed_query)
-    # try:
-    #     cursor, conn = get_connection()
-    #     cursor.execute(FINAL_QUERY, [run_id, int(site_id)])
-    #     result = cursor.fetchall()
-    #     print(result)
-    #     return len(result)
-    # except mysql.connector.Error as error:
-    #     logging.error("Failed to complete multi parameter search: {}".format(error))
-    # finally:
-    #     if (conn.is_connected()):
-    #         cursor.close()
-    #         conn.close()
 
 # Site Related Functions
 def get_sites():

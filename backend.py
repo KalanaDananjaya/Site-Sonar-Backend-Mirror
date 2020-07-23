@@ -12,7 +12,11 @@ def search_box():
         queries = req['SearchFields']
         equation = req['Equation']
         site_id = req['SiteId']
-        submitted_jobs, matching_jobs, total_jobs = full_search_site(site_id,queries,equation)
+        print (site_id,equation,queries)
+        if site_id == "all":
+            pass
+        else:
+            submitted_jobs, matching_jobs, total_jobs = full_search_site(site_id,queries,equation)
         result = {
             'submitted_jobs': submitted_jobs,
             'completed_jobs':total_jobs,
@@ -28,6 +32,16 @@ def get_last_run():
     result = get_last_run_data()
     return jsonify(result)
 
+@app.route('/all_sites', methods=['GET'])
+def get_sites_data():
+    all_site_data = get_sites()
+    return jsonify(all_site_data)
+
+@app.route('/search_keys', methods=['GET'])
+def get_keys():
+    search_keys = get_search_keys()
+    print (search_keys)
+    return jsonify(search_keys)
 
 if __name__ == "__main__":
     app.run(debug=True)
