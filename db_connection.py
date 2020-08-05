@@ -53,6 +53,7 @@ def get_all_runs_data():
     try:
         cursor.execute(GET_ALL_RUNS_DATA)
         results = cursor.fetchall()
+        print (results)
         last_run = {
             'run_id' : results[0][0],
             'started_at' : results[0][1],
@@ -131,16 +132,29 @@ def get_search_keys(run_id):
             conn.close()
 
 
-def get_all_jobs_by_site(run_id,site_id):
-    cursor,conn = get_connection()
+# def get_all_jobs_by_site(run_id,site_id):
+#     cursor,conn = get_connection()
+#     try:
+#         cursor.execute(GET_ALL_JOBS_COUNT_BY_SITE,[site_id,run_id])
+#         results = cursor.fetchone()
+#         return results[0]
+#     except mysql.connector.Error as error:
+#         logging.error("Failed to increment run id: {}".format(error))
+#     finally:
+#         if(conn.is_connected()):
+#             cursor.close()
+#             conn.close()
+
+def get_num_nodes_by_site(site_id):
     try:
-        cursor.execute(GET_ALL_JOBS_COUNT_BY_SITE,[site_id,run_id])
-        results = cursor.fetchone()
-        return results[0]
+        cursor, conn = get_connection()
+        cursor.execute(GET_NUM_NODES_BY_SITE_ID, [site_id])
+        result = cursor.fetchone()
+        return result[0]
     except mysql.connector.Error as error:
-        logging.error("Failed to increment run id: {}".format(error))
+        logging.error("Failed to get number of nodes by site id: {}".format(error))
     finally:
-        if(conn.is_connected()):
+        if (conn.is_connected()):
             cursor.close()
             conn.close()
 
@@ -159,10 +173,26 @@ def get_nodename_by_job_id(job_id):
             conn.close()
 
 
-def get_job_ids_of_site_and_state(run_id,site_id,state):
+# def get_job_ids_of_site_and_state(run_id,site_id,state):
+#     try:
+#         cursor, conn = get_connection()
+#         cursor.execute(GET_ALL_JOB_IDS_BY_SITE_AND_STATE, [site_id,run_id,state])
+#         result = cursor.fetchall()
+#         job_ids = []
+#         for row in result:
+#             job_ids.append(row[0])
+#         return job_ids
+#     except mysql.connector.Error as error:
+#         logging.error("Failed to complete multi parameter search: {}".format(error))
+#     finally:
+#         if (conn.is_connected()):
+#             cursor.close()
+#             conn.close()
+
+def get_job_ids_of_covered_nodes(run_id,site_id):
     try:
         cursor, conn = get_connection()
-        cursor.execute(GET_ALL_JOB_IDS_BY_SITE_AND_STATE, [site_id,run_id,state])
+        cursor.execute(GET_ALL_JOB_IDS_OF_COVERED_NODES, [site_id,run_id])
         result = cursor.fetchall()
         job_ids = []
         for row in result:
@@ -205,18 +235,19 @@ def full_search_site(site_id,queries,equation,run_id):
     # out   - "True & (True | ~ (False))""
     if type(site_id) == str:
         site_id = int(site_id)
-    job_ids = get_job_ids_of_site_and_state(run_id,site_id,'COMPLETED')
-    submitted_jobs = get_all_jobs_by_site(run_id,site_id)
-    completed_jobs = len(job_ids)
-    matching_jobs = 0
+    job_ids = get_job_ids_of_covered_nodes(run_id,site_id)
+    #submitted_jobs = get_all_jobs_by_site(run_id,site_id)
+    total_nodes = get_num_nodes_by_site(site_id)
+    covered_nodes = len(job_ids)
+    matching_nodes = 0
     equation = equation.replace("&"," and ").replace("|"," or ").replace("~"," not ")
     matching_job_data = {}
     unmatching_job_data = {}
     for job in job_ids:
         local_equation = equation
         params = get_job_params(job)
-        #nodename = get_nodename_by_job_id(job)
-        nodename = "node_" + str(job)
+        nodename = get_nodename_by_job_id(job)
+        #nodename = "node_" + str(job)
         for variable_key in queries:
             is_exists = check_key_val_exists_in_dict (queries[variable_key]['query_key'],queries[variable_key]['query_value'],params)
             if is_exists:
@@ -224,14 +255,14 @@ def full_search_site(site_id,queries,equation,run_id):
             else:
                 local_equation = local_equation.replace(variable_key, 'False')
         if (eval(local_equation) is True):
-            matching_jobs += 1
+            matching_nodes += 1
             matching_job_data.update({nodename: params})
             print(matching_job_data)
             print (len(matching_job_data))
         else:
             unmatching_job_data.update({nodename: params})
         print (local_equation, eval(local_equation))
-    return submitted_jobs, matching_jobs, completed_jobs, matching_job_data, unmatching_job_data
+    return total_nodes, matching_nodes, covered_nodes, matching_job_data, unmatching_job_data
 
 # def all_site_search(queries,equation):
 #     run_id = get_last_run_id()

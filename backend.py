@@ -15,15 +15,15 @@ def search_box():
         run_id = req['RunId']
         print (site_id,equation,queries,run_id)
         if site_id == "All":
-            submitted_jobs, matching_jobs, total_jobs = all_site_search(queries,equation,run_id)
+            total_nodes, matching_nodes, covered_nodes = all_site_search(queries,equation,run_id)
         else:
-            submitted_jobs, matching_jobs, total_jobs, matching_job_data, unmatching_job_data = full_search_site(site_id,queries,equation,run_id)
+            total_nodes, matching_nodes, covered_nodes, matching_job_data, unmatching_job_data = full_search_site(site_id,queries,equation,run_id)
             result = {
-                'submitted_jobs': submitted_jobs,
-                'completed_jobs':total_jobs,
-                'matching_jobs': matching_jobs,
-                'matching_nodes': matching_job_data,
-                'unmatching_nodes': unmatching_job_data
+                'total_nodes': total_nodes,
+                'covered_nodes':covered_nodes,
+                'matching_nodes': matching_nodes,
+                'matching_nodes_data': matching_job_data,
+                'unmatching_nodes_data': unmatching_job_data
             }
             print (result)
             return jsonify (result)
