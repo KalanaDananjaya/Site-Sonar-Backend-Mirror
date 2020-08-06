@@ -166,28 +166,11 @@ def get_nodename_by_job_id(job_id):
         result = cursor.fetchone()
         return result[0]
     except mysql.connector.Error as error:
-        logging.error("Failed to complete multi parameter search: {}".format(error))
+        logging.error("Failed to get nodename by job Id: {}".format(error))
     finally:
         if (conn.is_connected()):
             cursor.close()
             conn.close()
-
-
-# def get_job_ids_of_site_and_state(run_id,site_id,state):
-#     try:
-#         cursor, conn = get_connection()
-#         cursor.execute(GET_ALL_JOB_IDS_BY_SITE_AND_STATE, [site_id,run_id,state])
-#         result = cursor.fetchall()
-#         job_ids = []
-#         for row in result:
-#             job_ids.append(row[0])
-#         return job_ids
-#     except mysql.connector.Error as error:
-#         logging.error("Failed to complete multi parameter search: {}".format(error))
-#     finally:
-#         if (conn.is_connected()):
-#             cursor.close()
-#             conn.close()
 
 def get_job_ids_of_covered_nodes(run_id,site_id):
     try:
@@ -199,7 +182,7 @@ def get_job_ids_of_covered_nodes(run_id,site_id):
             job_ids.append(row[0])
         return job_ids
     except mysql.connector.Error as error:
-        logging.error("Failed to complete multi parameter search: {}".format(error))
+        logging.error("Failed to get job Ids of covered nodes: {}".format(error))
     finally:
         if (conn.is_connected()):
             cursor.close()
@@ -247,7 +230,6 @@ def full_search_site(site_id,queries,equation,run_id):
         local_equation = equation
         params = get_job_params(job)
         nodename = get_nodename_by_job_id(job)
-        #nodename = "node_" + str(job)
         for variable_key in queries:
             is_exists = check_key_val_exists_in_dict (queries[variable_key]['query_key'],queries[variable_key]['query_value'],params)
             if is_exists:
@@ -264,18 +246,60 @@ def full_search_site(site_id,queries,equation,run_id):
         print (local_equation, eval(local_equation))
     return total_nodes, matching_nodes, covered_nodes, matching_job_data, unmatching_job_data
 
-# def all_site_search(queries,equation):
-#     run_id = get_last_run_id()
-#     sites = get_sites_by_processing_state('COMPLETED')
-#     matching_sites = 0
-#     total_sites = len(sites)
-#     total_covered_nodes = 0
-#     total_matching_nodes = 0
-#     for site_id in sites:
-#         submitted_jobs, matching_jobs, completed_jobs = full_search_site(site_id,queries,equation)
-#         if matching_jobs/completed_jobs > 0.5:
-#             matching_sites += 1
-#         total_covered_nodes += completed_jobs
+def all_site_search(queries,equation,run_id):
+    """Perform a Grid search for the given equation
+
+    Args:
+        queries (dict): Search Query Dict
+        equation (str): Boolean equation for combining search queries
+        run_id (str): Run Id
+
+    Returns:
+        total_sites(int): Total number of sites
+        total_completed_site_num(int): Total number of completed sites in the given run
+        matching_sites(int): Number of sites that match the query
+        matching_sites_list(list): Sites matching the query
+        unmatching_sites_list(list): Sites not matching the query
+        all_sites)
+    """
+    all_sites = get_all_sitenames()
+    completed_sites = get_sites_by_processing_state('COMPLETED',run_id)
+    print (completed_sites)
+    matching_sites = 0
+    matching_sites_list = []
+    unmatching_sites_list = []
+    total_sites = len(all_sites)
+    total_completed_site_num = len(completed_sites)
+    for site_id in completed_sites:
+        total_matching_nodes = 0
+        total_nodes, matching_nodes, covered_nodes, matching_job_data, unmatching_job_data = full_search_site(site_id,queries,equation,run_id)
+        print (site_id, matching_nodes/covered_nodes)
+        if matching_nodes/covered_nodes > 0.5:
+            print (site_id,"matching")
+            matching_sites += 1
+            matching_sites_list.append(get_sitename_by_site_id(site_id))
+        else:
+            print (site_id,"not matching")
+            unmatching_sites_list.append(get_sitename_by_site_id(site_id))
+    incomplete_sites_list = list(set(all_sites).difference(completed_sites))
+    print ("incomplete",incomplete_sites_list)
+    return total_sites, total_completed_site_num, matching_sites, matching_sites_list, unmatching_sites_list, incomplete_sites_list
+
+def get_sites_by_processing_state(state,run_id):
+    site_ids = []
+    cursor, conn = get_connection()
+    try:
+        cursor.execute(GET_SITE_IDS_BY_PROCESSING_STATE,[state,run_id])
+        results = cursor.fetchall()
+        for row in results:
+            site_ids.append(row[0])
+    except mysql.connector.Error as error:
+        logging.error("Failed to fetch processing states: {}".format(error))
+    finally:
+        if(conn.is_connected()):
+            cursor.close()
+            conn.close()
+        return site_ids
 
 # Site Related Functions
 def get_sites():
@@ -312,252 +336,32 @@ def get_sites():
             cursor.close()
             conn.close()
 
-# def get_site_ids():
-#     """
-#     Get Site IDs
-#
-#     Returns:
-#         Site IDs(list)
-#     """
-#     cursor, conn = get_connection()
-#     try:
-#         cursor.execute(GET_SITE_IDS)
-#         results = cursor.fetchall()
-#         ids = []
-#         for row in results:
-#             site_id = row[0]
-#             ids.append(site_id)
-#         return ids
-#     except mysql.connector.Error as error:
-#             logging.debug("Failed to get site ids: {}".format(error))
-#     finally:
-#         if(conn.is_connected()):
-#             cursor.close()
-#             conn.close()
+def get_sitename_by_site_id(site_id):
+    cursor, conn = get_connection()
+    try:
+        cursor.execute(GET_SITENAME_BY_SITE_ID,[site_id])
+        results = cursor.fetchone()
+        return results[0]
+    except mysql.connector.Error as error:
+        logging.error("Failed to get sitename by site Id: {}".format(error))
+    finally:
+        if(conn.is_connected()):
+            cursor.close()
+            conn.close()
 
-# def add_sites_from_csv(csv_filename):
-#     """
-#     Add Grid sites from CSV file
-#
-#     Args:
-#         csv_filename (str): Name of the CSV file (Format: sitename,num_nodes)
-#     """
-#
-#     cursor,conn = get_connection()
-#     site_tuples = []
-#     sitenames = get_sitenames()
-#     with open(csv_filename, newline='') as csvfile:
-#         csv_reader = csv.reader(csvfile, delimiter=' ', quotechar='|')
-#         for row in csv_reader:
-#             details = row[0].split(',')
-#             current_site_name = details[0]
-#             is_exists = check_sitename_exists(sitenames, current_site_name)
-#             if (is_exists == True):
-#                 logging.warning('%s already exists in the database. Please use the update function. Skipping...',current_site_name)
-#             else:
-#                 num_nodes = details[1]
-#                 if not num_nodes:
-#                     num_nodes = -1
-#                 else:
-#                     num_nodes = int(num_nodes)
-#                 normalized_name = normalize_ce_name(current_site_name)
-#                 site_tuples.append((current_site_name, normalized_name, num_nodes))
-#                 logging.debug('Adding %s to the database', current_site_name)
-#     try:
-#         cursor.executemany(ADD_SITE, site_tuples)
-#         conn.commit()
-#         logging.debug("Total number of sites added : %s", cursor.rowcount)
-#     except mysql.connector.Error as error:
-#         logging.error("Failed to add sites to database: {}".format(error))
-#         conn.rollback()
-#     finally:
-#         if(conn.is_connected()):
-#             cursor.close()
-#             conn.close()
-#             logging.debug("connection is closed")
-#
-# def update_site_last_update_time(site_id):
-#     """
-#     Update last update time of the site
-#
-#     Args:
-#         site_id (int): Site ID
-#     """
-#     cursor, conn = get_connection()
-#     try:
-#         cursor.execute(UPDATE_LAST_SITE_UPDATE_TIME,[site_id])
-#     except mysql.connector.Error as error:
-#         logging.error("Failed to update site last update times: {}".format(error))
-#     finally:
-#         if(conn.is_connected()):
-#             cursor.close()
-#             conn.close()
-#
-#
-# def check_sitename_exists(sitenames,current_site_name):
-#     """
-#     Check whether current_site_name exists in sitenames
-#
-#     Args:
-#         sitenames (list): List of available sites in the DB
-#         current_site_name (str): Name of the new site
-#
-#     Returns:
-#         Bool: True if current_site_name exists in sitenames
-#     """
-#     if not sitenames:
-#         return False
-#     else:
-#         if current_site_name in sitenames:
-#             return True
-#         else:
-#             return False
+def get_all_sitenames():
+    cursor, conn = get_connection()
+    try:
+        sitenames = []
+        cursor.execute(GET_ALL_SITENAMES)
+        results = cursor.fetchall()
+        for row in results:
+            sitenames.append(row[0])
+        return sitenames
+    except mysql.connector.Error as error:
+        logging.error("Failed to get all sitenames: {}".format(error))
+    finally:
+        if(conn.is_connected()):
+            cursor.close()
+            conn.close()
 
-# def get_sitenames():
-#     """
-#     Get all names of sites
-#
-#     Returns:
-#         sitenames
-#     """
-#     cursor, conn = get_connection()
-#     sitenames=[]
-#     try:
-#         cursor.execute(GET_SITENAMES)
-#         results = cursor.fetchall()
-#         for row in results:
-#             sitenames.append(row[0])
-#         return sitenames
-#     except mysql.connector.Error as error:
-#         logging.error("Failed to get sitenames: {}".format(error))
-#     finally:
-#         if(conn.is_connected()):
-#             cursor.close()
-#             conn.close()
-
-
-# def update_processing_state(state,initialize=True):
-#     """
-#     Update processing_states table
-#
-#     Return True if succesfull
-#     """
-#     success_flag = False
-#     run_id = get_run_id()
-#     cursor, conn = get_connection(auto_commit=False)
-#     try:
-#         if initialize:
-#             site_ids = get_site_ids()
-#             state_tuple = []
-#             for site_id in site_ids:
-#                 state_tuple.append((site_id,run_id,state))
-#             cursor.executemany(INITIALIZE_PROCESSING_STATE,state_tuple)
-#         else:
-#             site_ids = get_sites_by_processing_state('WAITING')
-#             state_tuple = []
-#             for site_id in site_ids:
-#                 state_tuple.append((state, site_id,run_id))
-#             cursor.executemany(UPDATE_PROCESSING_STATE,state_tuple)
-#         conn.commit()
-#         logging.debug('Update processing states to %s successfully',state)
-#         success_flag = True
-#     except mysql.connector.Error as error:
-#         logging.error("Failed to update processing states: {}".format(error))
-#         success_flag = False
-#     finally:
-#         if(conn.is_connected()):
-#             cursor.close()
-#             conn.close()
-#         return success_flag
-
-# def get_sites_by_processing_state(state):
-#     run_id = get_run_id()
-#     site_ids = []
-#     cursor, conn = get_connection()
-#     try:
-#         cursor.execute(GET_SITE_IDS_BY_PROCESSING_STATE,(state,run_id))
-#         results = cursor.fetchall()
-#         for row in results:
-#             site_ids.append(row[0])
-#     except mysql.connector.Error as error:
-#         logging.error("Failed to fetch processing states: {}".format(error))
-#     finally:
-#         if(conn.is_connected()):
-#             cursor.close()
-#             conn.close()
-#         return site_ids
-        
-# Job related functions
-
-# def add_job(job_id,site_id):
-#     """
-#     Add jobs to the database
-#
-#     Args:
-#         job_id (str): Job ID
-#         site_id (int)
-#     """
-#     cursor, conn = get_connection()
-#     try:
-#         run_id = get_run_id()
-#         cursor.execute(ADD_JOB, (job_id,run_id, site_id, 'STARTED'))
-#         logging.debug('Job %s added to database succesfully',job_id.strip())
-#     except mysql.connector.Error as error:
-#         logging.error("Failed to add job: {}".format(error))
-#     finally:
-#         if(conn.is_connected()):
-#             cursor.close()
-#             conn.close()
-#
-# def get_all_job_ids_by_state(state):
-#     """
-#     Get all jobs in the database with given state
-#
-#     Args:
-#         state (enum): ('STARTED','STALLED','COMPLETED','KILLED')
-#
-#     Returns:
-#         job_ids(list): Job IDs of jobs in given  state
-#     """
-#     cursor, conn = get_connection()
-#     try:
-#         run_id = get_run_id()
-#         cursor.execute(GET_ALL_JOB_IDS_BY_STATE,[state,run_id])
-#         results = cursor.fetchall()
-#         job_ids = []
-#         for row in results:
-#             job_ids.append(row[0])
-#         return job_ids
-#     except mysql.connector.Error as error:
-#         logging.error("Failed to get jobs by state: {}".format(error))
-#     finally:
-#         if(conn.is_connected()):
-#             cursor.close()
-#             conn.close()
-#
-# def update_job_state_by_job_id(job_id,state):
-#     """
-#     Update state of the job
-#
-#     Args:
-#         job_id (int): Single id or id list
-#         state (enum): ('STARTED','ERROR','STALLED','COMPLETED','KILLED')
-#     """
-#     cursor, conn = get_connection(auto_commit=False)
-#     run_id = get_run_id()
-#     job_tuple = []
-#     if type(job_id) == str:
-#         job_tuple.append((state,job_id,run_id))
-#     elif type(job_id) == list:
-#         for id in job_id:
-#             job_tuple.append((state,id,run_id))
-#     try:
-#         cursor.executemany(UPDATE_JOB_STATE_BY_JOBID, job_tuple)
-#         conn.commit()
-#     except mysql.connector.Error as error:
-#         logging.error("Failed to update job state: {}".format(error))
-#         conn.rollback()
-#     finally:
-#         if(conn.is_connected()):
-#             cursor.close()
-#             conn.close()

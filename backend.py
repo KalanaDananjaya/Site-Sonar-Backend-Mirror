@@ -14,11 +14,23 @@ def search_box():
         site_id = req['SiteId']
         run_id = req['RunId']
         print (site_id,equation,queries,run_id)
-        if site_id == "All":
-            total_nodes, matching_nodes, covered_nodes = all_site_search(queries,equation,run_id)
+        if site_id == "all":
+            total_sites, total_completed_site_num, matching_sites, matching_sites_list, unmatching_sites_list, incomplete_sites_list = all_site_search(queries,equation,run_id)
+            result = {
+		'grid_search': True,
+                'total_sites': total_sites,
+                'covered_sites':total_completed_site_num,
+                'matching_sites': matching_sites,
+                'matching_sites_list': matching_sites_list,
+                'unmatching_sites_list': unmatching_sites_list,
+                'incomplete_sites_list': incomplete_sites_list
+            }
+            print (result)
+            return jsonify (result)
         else:
             total_nodes, matching_nodes, covered_nodes, matching_job_data, unmatching_job_data = full_search_site(site_id,queries,equation,run_id)
             result = {
+		'grid_search': False,
                 'total_nodes': total_nodes,
                 'covered_nodes':covered_nodes,
                 'matching_nodes': matching_nodes,
