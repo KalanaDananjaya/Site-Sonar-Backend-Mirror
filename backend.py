@@ -17,7 +17,7 @@ def search_box():
         if site_id == "all":
             total_sites, total_completed_site_num, matching_sites, matching_sites_list, unmatching_sites_list, incomplete_sites_list = all_site_search(queries,equation,run_id)
             result = {
-		'grid_search': True,
+		        'grid_search': True,
                 'total_sites': total_sites,
                 'covered_sites':total_completed_site_num,
                 'matching_sites': matching_sites,
@@ -25,19 +25,17 @@ def search_box():
                 'unmatching_sites_list': unmatching_sites_list,
                 'incomplete_sites_list': incomplete_sites_list
             }
-            print (result)
             return jsonify (result)
         else:
             total_nodes, matching_nodes, covered_nodes, matching_job_data, unmatching_job_data = full_search_site(site_id,queries,equation,run_id)
             result = {
-		'grid_search': False,
+		        'grid_search': False,
                 'total_nodes': total_nodes,
                 'covered_nodes':covered_nodes,
                 'matching_nodes': matching_nodes,
                 'matching_nodes_data': matching_job_data,
                 'unmatching_nodes_data': unmatching_job_data
             }
-            print (result)
             return jsonify (result)
     if request.method == 'GET':
         return render_template('index.html',init='True')
@@ -66,6 +64,15 @@ def get_keys():
         search_keys = get_search_keys(run_id)
         print (search_keys)
         return jsonify(search_keys)
+
+@app.route('/run_summary', methods=['POST'])
+def run_summary():
+    if request.method == 'POST':
+        print (request.json)
+        run_id = request.json['RunId']
+        run_summary = get_run_summary(run_id)
+        print(run_summary)
+        return jsonify(run_summary)
 
 
 if __name__ == "__main__":

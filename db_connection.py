@@ -239,8 +239,6 @@ def full_search_site(site_id,queries,equation,run_id):
         if (eval(local_equation) is True):
             matching_nodes += 1
             matching_job_data.update({nodename: params})
-            print(matching_job_data)
-            print (len(matching_job_data))
         else:
             unmatching_job_data.update({nodename: params})
         print (local_equation, eval(local_equation))
@@ -365,3 +363,25 @@ def get_all_sitenames():
             cursor.close()
             conn.close()
 
+def get_run_summary(run_id):
+    cursor, conn = get_connection()
+    try:
+        site_data = []
+        cursor.execute(GET_RUN_SUMMARY,[run_id])
+        results = cursor.fetchall()
+        for row in results:
+            site = {
+                'site_id': row[0],
+                'sitename': row[1],
+                'covered_nodes': row[2],
+                'total_nodes': row[3],
+                'coverage': row[4]
+            }
+            site_data.append(site)
+        return site_data
+    except mysql.connector.Error as error:
+        logging.error("Failed to get run summary: {}".format(error))
+    finally:
+        if(conn.is_connected()):
+            cursor.close()
+            conn.close()

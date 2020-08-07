@@ -12,6 +12,7 @@ GET_ALL_JOB_IDS_OF_COVERED_NODES = 'SELECT job_id FROM nodes WHERE site_id = %s 
 
 
 GET_SITE_IDS_BY_PROCESSING_STATE = 'SELECT site_id FROM processing_state WHERE (state=%s) AND (run_id=%s)'
+GET_RUN_SUMMARY = 'SELECT sites.site_id,sites.site_name,count(node_id),num_nodes,(count(node_id)/num_nodes)*100 FROM `nodes` INNER JOIN `sites` on sites.site_id=nodes.site_id where run_id=%s group by sites.site_id'
 
 GET_LAST_RUN_DATA = 'SELECT * FROM run WHERE (state="COMPLETED" or state="TIMED_OUT") ORDER BY run_id DESC LIMIT 1'
 GET_ALL_RUNS_DATA = 'SELECT * FROM run WHERE (state="COMPLETED" or state="TIMED_OUT") ORDER BY run_id DESC'
