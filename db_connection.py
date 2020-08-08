@@ -81,6 +81,28 @@ def get_all_runs_data():
             cursor.close()
             conn.close()
 
+def get_all_runs_data_cli():
+    cursor, conn = get_connection()
+    try:
+        cursor.execute(GET_ALL_RUNS_DATA_ANY_STATE)
+        results = cursor.fetchall()
+        run_data = []
+        for row in results:
+            run = {
+                'run_id' : row[0],
+                'started_at' : row[1],
+                'finished_at' : row[2],
+                'state' : row[3]
+            }
+            run_data.append(run)
+        return run_data
+    except mysql.connector.Error as error:
+        logging.error("Failed to get all runs data: {}".format(error))
+    finally:
+        if(conn.is_connected()):
+            cursor.close()
+            conn.close()
+
 
 # def get_last_run_id():
 #     cursor, conn = get_connection()
@@ -381,6 +403,29 @@ def get_run_summary(run_id):
         return site_data
     except mysql.connector.Error as error:
         logging.error("Failed to get run summary: {}".format(error))
+    finally:
+        if(conn.is_connected()):
+            cursor.close()
+            conn.close()
+
+
+def get_job_count_ids_by_state(state, run_id):
+    """
+    Get job count in the database with given state
+
+    Args:
+        state (enum): ('STARTED','COMPLETED','KILLED')
+        run_id (int): Run ID
+    Returns:
+        job_count(list): Count of jobs in given  state
+    """
+    cursor, conn = get_connection()
+    try:
+        cursor.execute(GET_ALL_JOB_IDS_BY_STATE,[state, run_id])
+        results = cursor.fetchone()
+        return results[0]
+    except mysql.connector.Error as error:
+        logging.error("Failed to get jobs by state: {}".format(error))
     finally:
         if(conn.is_connected()):
             cursor.close()

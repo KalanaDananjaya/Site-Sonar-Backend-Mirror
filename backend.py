@@ -50,6 +50,11 @@ def get_all_runs():
     runs_data = get_all_runs_data()
     return jsonify(runs_data)
 
+@app.route('/all_runs_cli', methods=['GET'])
+def get_all_runs_cli():
+    runs_data = get_all_runs_data_cli()
+    return jsonify(runs_data)
+
 @app.route('/all_sites', methods=['GET'])
 def get_sites_data():
     all_site_data = get_sites()
@@ -74,6 +79,19 @@ def run_summary():
         print(run_summary)
         return jsonify(run_summary)
 
+@app.route('/jobs', methods=['POST'])
+def job_summary():
+    if request.method == 'POST':
+        run_id = request.json['RunId']
+        started_job_num = get_job_count_ids_by_state('STARTED', run_id)
+        completed_job_num = get_job_count_ids_by_state('COMPLETED', run_id)
+        killed_job_num = get_job_count_ids_by_state('KILLED', run_id)
+        job_summary = {
+            'started_jobs': started_job_num,
+            'completed_jobs': completed_job_num,
+            'killed_jobs': killed_job_num
+        }
+        return jsonify(job_summary)
 
 if __name__ == "__main__":
     app.run(debug=True)
