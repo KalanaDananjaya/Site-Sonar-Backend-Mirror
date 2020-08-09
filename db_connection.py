@@ -104,20 +104,6 @@ def get_all_runs_data_cli():
             conn.close()
 
 
-# def get_last_run_id():
-#     cursor, conn = get_connection()
-#     try:
-#         cursor.execute(GET_LAST_RUN_ID)
-#         run_id = cursor.fetchone()
-#         return run_id[0]
-#     except mysql.connector.Error as error:
-#         logging.error("Failed to get last run id: {}".format(error))
-#     finally:
-#         if(conn.is_connected()):
-#             cursor.close()
-#             conn.close()
-
-
 def check_run_exists(run_id):
     cursor,conn = get_connection()
     flag = True
@@ -154,18 +140,32 @@ def get_search_keys(run_id):
             conn.close()
 
 
-# def get_all_jobs_by_site(run_id,site_id):
-#     cursor,conn = get_connection()
-#     try:
-#         cursor.execute(GET_ALL_JOBS_COUNT_BY_SITE,[site_id,run_id])
-#         results = cursor.fetchone()
-#         return results[0]
-#     except mysql.connector.Error as error:
-#         logging.error("Failed to increment run id: {}".format(error))
-#     finally:
-#         if(conn.is_connected()):
-#             cursor.close()
-#             conn.close()
+def get_all_jobs_count_summary(run_id):
+    cursor,conn = get_connection()
+    try:
+        cursor.execute(GET_ALL_JOBS_COUNT_SUMMARY,[run_id])
+        results = cursor.fetchall()
+        site_dict = {}
+        for row in results:
+            # row[0] - COUNT(job_id),
+            # row[1] - job_state
+            # row[2] - site_id
+            if row[2] not in site_dict.keys():
+                site_dict.update({
+                    row[2]: {
+                        row[1]: row[0]
+                    }
+                })
+            else:
+                site_dict[row[2]].update({row[1]: row[0]})
+        print (site_dict)
+        return site_dict
+    except mysql.connector.Error as error:
+        logging.error("Failed to get all job summary: {}".format(error))
+    finally:
+        if(conn.is_connected()):
+            cursor.close()
+            conn.close()
 
 def get_num_nodes_by_site(site_id):
     try:
