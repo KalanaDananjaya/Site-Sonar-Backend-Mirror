@@ -40,10 +40,6 @@ def search_box():
     if request.method == 'GET':
         return render_template('index.html',init='True')
 
-@app.route('/last_run', methods=['GET'])
-def get_last_run():
-    result = get_last_run_data()
-    return jsonify(result)
 
 @app.route('/all_runs', methods=['GET'])
 def get_all_runs():

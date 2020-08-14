@@ -3,6 +3,7 @@ import datetime
 import time
 import logging
 import os
+import fnmatch
 
 from config import DB_HOST,DB_USER,DB_PWD,DB_DATABASE
 from sql_queries import *
@@ -29,24 +30,6 @@ def get_connection(auto_commit=True):
     except mysql.connector.Error as error:
         logging.error("Error while connecting to MySQL", error)
 
-# def get_last_run_data():
-#     cursor, conn = get_connection()
-#     try:
-#         cursor.execute(GET_LAST_RUN_DATA)
-#         run = cursor.fetchone()
-#         run = {
-#             'run_id' : run[0],
-#             'started_at' : run[1],
-#             'finished_at' : run[2],
-#             'state' : run[3]
-#         }
-#         return run
-#     except mysql.connector.Error as error:
-#         logging.error("Failed to get last run data: {}".format(error))
-#     finally:
-#         if(conn.is_connected()):
-#             cursor.close()
-#             conn.close()
 
 def get_all_runs_data():
     cursor, conn = get_connection()
@@ -194,6 +177,7 @@ def get_nodename_by_job_id(job_id):
             cursor.close()
             conn.close()
 
+
 def get_job_ids_of_covered_nodes(run_id,site_id):
     try:
         cursor, conn = get_connection()
@@ -227,8 +211,9 @@ def get_job_params(job_id):
             cursor.close()
             conn.close()
 
+
 def check_key_val_exists_in_dict(key,val,dict):
-    if key in dict.keys() and val == dict[key]:
+    if key in dict.keys() and fnmatch.fnmatch(dict[key],val):
         return True
     else:
         return False
@@ -248,6 +233,7 @@ def full_search_site(site_id,queries,equation,run_id):
     equation = equation.replace("&"," and ").replace("|"," or ").replace("~"," not ")
     matching_job_data = {}
     unmatching_job_data = {}
+    print (job_ids)
     for job in job_ids:
         local_equation = equation
         params = get_job_params(job)
@@ -283,8 +269,8 @@ def all_site_search(queries,equation,run_id):
         all_sites)
     """
     all_sites = get_all_sitenames()
+    # instead of completed sites, get sites which have more than x % coverage
     completed_sites = get_sites_by_processing_state('COMPLETED',run_id)
-    print (completed_sites)
     matching_sites = 0
     matching_sites_list = []
     unmatching_sites_list = []
