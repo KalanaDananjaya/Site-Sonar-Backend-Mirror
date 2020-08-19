@@ -249,7 +249,6 @@ def full_search_site(site_id,queries,equation,run_id):
             matching_job_data.update({nodename: params})
         else:
             unmatching_job_data.update({nodename: params})
-        print (local_equation, eval(local_equation))
     return total_nodes, matching_nodes, covered_nodes, matching_job_data, unmatching_job_data
 
 def all_site_search(queries,equation,run_id):
@@ -266,7 +265,7 @@ def all_site_search(queries,equation,run_id):
         matching_sites(int): Number of sites that match the query
         matching_sites_list(list): Sites matching the query
         unmatching_sites_list(list): Sites not matching the query
-        all_sites)
+        all_sites(list): List of all the sites
     """
     all_sites = get_all_sitenames()
     # instead of completed sites, get sites which have more than x % coverage
@@ -277,9 +276,7 @@ def all_site_search(queries,equation,run_id):
     total_sites = len(all_sites)
     total_completed_site_num = len(completed_sites)
     for site_id in completed_sites:
-        total_matching_nodes = 0
         total_nodes, matching_nodes, covered_nodes, matching_job_data, unmatching_job_data = full_search_site(site_id,queries,equation,run_id)
-        print (site_id, matching_nodes/covered_nodes)
         if matching_nodes/covered_nodes > 0.5:
             print (site_id,"matching")
             matching_sites += 1
@@ -287,7 +284,7 @@ def all_site_search(queries,equation,run_id):
         else:
             print (site_id,"not matching")
             unmatching_sites_list.append(get_sitename_by_site_id(site_id))
-    incomplete_sites_list = list(set(all_sites).difference(completed_sites))
+    incomplete_sites_list = list(set(all_sites).difference(matching_sites_list).difference(unmatching_sites_list))
     print ("incomplete",incomplete_sites_list)
     return total_sites, total_completed_site_num, matching_sites, matching_sites_list, unmatching_sites_list, incomplete_sites_list
 
