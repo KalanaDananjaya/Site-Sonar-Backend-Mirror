@@ -2,9 +2,14 @@ from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 from db_connection import *
 
-app = Flask(__name__)
+app = Flask(__name__,static_folder='./build', static_url_path='/')
 CORS(app)
 
+@app.route('/', methods=['GET'])
+def index():
+    return app.send_static_file('index.html')
+    
+    
 @app.route('/search_site', methods=['POST'])
 def search_box():
     if request.method == 'POST':
@@ -79,4 +84,4 @@ def job_summary():
         return jsonify(sitewise_job_count)
 
 if __name__ == "__main__":
-     app.run(host='0.0.0.0',port=5000)
+     app.run(host='0.0.0.0',port=80)
