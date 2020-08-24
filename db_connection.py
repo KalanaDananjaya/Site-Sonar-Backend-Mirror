@@ -330,7 +330,7 @@ def full_search_site(site_id, queries, equation, run_id):
     Args:
         site_id (int): Site ID
         queries (int): { letter: { identifier: result } } Eg: { A: { Singularity : SUPPORTED 
-        equation (string): Logical relationship between query keys Eg: "A & (B | ~ (C))"
+        equation (str): Logical relationship between query keys Eg: "A & (B | ~ (C))"
         run_id (int): Run ID
 
     Returns:
