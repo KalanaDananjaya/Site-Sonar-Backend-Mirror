@@ -7,7 +7,6 @@ GET_NUM_NODES_BY_SITE_ID = 'SELECT num_nodes FROM sites where site_id=%s'
 
 GET_NODENAME_BY_JOB_ID = 'SELECT node_name FROM nodes where job_id=%s'
 
-
 GET_ALL_JOB_IDS_OF_COVERED_NODES = 'SELECT job_id FROM nodes WHERE site_id = %s AND run_id = %s'
 GET_ALL_JOB_IDS_BY_STATE = 'SELECT COUNT(job_id) FROM jobs WHERE job_state = %s AND run_id = %s'
 GET_ALL_JOBS_COUNT_SUMMARY = 'SELECT COUNT(job_id),job_state,site_id FROM jobs WHERE run_id=%s GROUP BY site_id,job_state'
