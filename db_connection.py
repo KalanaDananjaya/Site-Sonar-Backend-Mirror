@@ -39,7 +39,10 @@ def get_connection(auto_commit=True):
             autocommit=auto_commit
         )
         cursor = connection.cursor()
-        return cursor, connection
+        if connection:
+            return cursor, connection
+        else:
+            get_connection()
     except mysql.connector.Error as error:
         logging.error("Error while connecting to MySQL", error)
 
