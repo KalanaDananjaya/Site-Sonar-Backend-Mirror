@@ -39,7 +39,7 @@ def get_connection(auto_commit=True):
             autocommit=auto_commit
         )
         cursor = connection.cursor()
-        if connection:
+        if cursor:
             return cursor, connection
         else:
             logging.error("Failed to connect to database. Retrying...")
@@ -78,13 +78,14 @@ def get_all_runs_data():
             'selected_run': last_run,
             'all_runs': run_data
         }
-        return all_run_data
     except mysql.connector.Error as error:
+        all_run_data = None
         logging.error("Failed to get all runs data: {}".format(error))
     finally:
         if(conn.is_connected()):
             cursor.close()
             conn.close()
+        return all_run_data
 
 
 def get_all_runs_data_cli():
@@ -110,13 +111,14 @@ def get_all_runs_data_cli():
                 'state': row[3]
             }
             run_data.append(run)
-        return run_data
     except mysql.connector.Error as error:
         logging.error("Failed to get all runs data: {}".format(error))
+        run_data = None
     finally:
         if(conn.is_connected()):
             cursor.close()
             conn.close()
+        return run_data
 
 
 def check_run_exists(run_id):
@@ -164,13 +166,15 @@ def get_search_keys(run_id):
     try:
         cursor.execute(GET_SEARCH_KEYS, [run_id])
         results = cursor.fetchone()
-        return results[0]
+        search_keys = results[0]
     except mysql.connector.Error as error:
+        search_keys = None
         logging.debug("Failed to get search keys: {}".format(error))
     finally:
         if(conn.is_connected()):
             cursor.close()
             conn.close()
+        return search_keys
 
 
 def get_all_jobs_count_summary(run_id):
@@ -200,13 +204,14 @@ def get_all_jobs_count_summary(run_id):
                 })
             else:
                 site_dict[row[2]].update({row[1]: row[0]})
-        return site_dict
     except mysql.connector.Error as error:
+        site_dict = None
         logging.error("Failed to get all job summary: {}".format(error))
     finally:
         if(conn.is_connected()):
             cursor.close()
             conn.close()
+        return site_dict
 
 
 def get_num_nodes_by_site(site_id):
@@ -223,14 +228,16 @@ def get_num_nodes_by_site(site_id):
         cursor, conn = get_connection()
         cursor.execute(GET_NUM_NODES_BY_SITE_ID, [site_id])
         result = cursor.fetchone()
-        return result[0]
+        num_nodes = result[0]
     except mysql.connector.Error as error:
+        num_nodes = None
         logging.error(
             "Failed to get number of nodes by site id: {}".format(error))
     finally:
         if (conn.is_connected()):
             cursor.close()
             conn.close()
+        return num_nodes
 
 
 def get_nodename_by_job_id(job_id):
@@ -247,13 +254,15 @@ def get_nodename_by_job_id(job_id):
         cursor, conn = get_connection()
         cursor.execute(GET_NODENAME_BY_JOB_ID, [job_id])
         result = cursor.fetchone()
-        return result[0]
+        nodename = result[0]
     except mysql.connector.Error as error:
+        nodename = None
         logging.error("Failed to get nodename by job Id: {}".format(error))
     finally:
         if (conn.is_connected()):
             cursor.close()
             conn.close()
+        return nodename
 
 
 def get_job_ids_of_covered_nodes(run_id, site_id):
@@ -273,14 +282,15 @@ def get_job_ids_of_covered_nodes(run_id, site_id):
         job_ids = []
         for row in result:
             job_ids.append(row[0])
-        return job_ids
     except mysql.connector.Error as error:
+        job_ids = None
         logging.error(
             "Failed to get job Ids of covered nodes: {}".format(error))
     finally:
         if (conn.is_connected()):
             cursor.close()
             conn.close()
+        return job_ids
 
 
 def get_job_params(job_id):
@@ -300,13 +310,14 @@ def get_job_params(job_id):
         params = {}
         for row in result:
             params.update({row[0]: row[1]})
-        return params
     except mysql.connector.Error as error:
+        params = None
         logging.error("Failed to get parameters by Job Id: {}".format(error))
     finally:
         if (conn.is_connected()):
             cursor.close()
             conn.close()
+        return params
 
 
 def check_key_val_exists_in_dict(key, val, dict):
@@ -431,6 +442,7 @@ def get_sites_by_processing_state(state, run_id):
         for row in results:
             site_ids.append(row[0])
     except mysql.connector.Error as error:
+        site_ids = None
         logging.error("Failed to fetch processing states: {}".format(error))
     finally:
         if(conn.is_connected()):
@@ -467,13 +479,14 @@ def get_sites():
                 'last_update': last_update
             }
             sites.append(site)
-        return sites
     except mysql.connector.Error as error:
+        sites = None
         logging.error("Failed to retrieve sites: {}".format(error))
     finally:
         if(conn.is_connected()):
             cursor.close()
             conn.close()
+        return sites
 
 
 def get_sitename_by_site_id(site_id):
@@ -490,13 +503,15 @@ def get_sitename_by_site_id(site_id):
     try:
         cursor.execute(GET_SITENAME_BY_SITE_ID, [site_id])
         results = cursor.fetchone()
-        return results[0]
+        site_name = results[0]
     except mysql.connector.Error as error:
+        site_name = None
         logging.error("Failed to get sitename by site Id: {}".format(error))
     finally:
         if(conn.is_connected()):
             cursor.close()
             conn.close()
+        return site_name
 
 
 def get_all_sitenames():
@@ -513,13 +528,14 @@ def get_all_sitenames():
         results = cursor.fetchall()
         for row in results:
             sitenames.append(row[0])
-        return sitenames
     except mysql.connector.Error as error:
+        sitenames = None
         logging.error("Failed to get all sitenames: {}".format(error))
     finally:
         if(conn.is_connected()):
             cursor.close()
             conn.close()
+        return sitenames
 
 
 def get_run_summary(run_id):
@@ -546,13 +562,14 @@ def get_run_summary(run_id):
                 'coverage': row[4]
             }
             site_data.append(site)
-        return site_data
     except mysql.connector.Error as error:
+        site_data = None
         logging.error("Failed to get run summary: {}".format(error))
     finally:
         if(conn.is_connected()):
             cursor.close()
             conn.close()
+        return site_data
 
 
 def get_job_count_ids_by_state(state, run_id):
@@ -569,10 +586,12 @@ def get_job_count_ids_by_state(state, run_id):
     try:
         cursor.execute(GET_ALL_JOB_IDS_BY_STATE, [state, run_id])
         results = cursor.fetchone()
-        return results[0]
+        job_count = results[0]
     except mysql.connector.Error as error:
+        job_count = None
         logging.error("Failed to get jobs by state: {}".format(error))
     finally:
         if(conn.is_connected()):
             cursor.close()
             conn.close()
+        return job_count
