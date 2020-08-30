@@ -42,6 +42,7 @@ def get_connection(auto_commit=True):
         if connection:
             return cursor, connection
         else:
+            logging.error("Failed to connect to database. Retrying...")
             get_connection()
     except mysql.connector.Error as error:
         logging.error("Error while connecting to MySQL", error)
@@ -400,11 +401,11 @@ def all_site_search(queries, equation, run_id):
         total_nodes, matching_nodes, covered_nodes, matching_job_data, unmatching_job_data = full_search_site(
             site_id, queries, equation, run_id)
         if matching_nodes/covered_nodes > 0.5:
-            print("Site", site_id, "matching")
+            logging.debug("Site", site_id, "matching")
             matching_sites += 1
             matching_sites_list.append(get_sitename_by_site_id(site_id))
         else:
-            print("Site", site_id, "not matching")
+            logging.debug("Site", site_id, "not matching")
             unmatching_sites_list.append(get_sitename_by_site_id(site_id))
     incomplete_sites_list = list(set(all_sites).difference(
         matching_sites_list).difference(unmatching_sites_list))
